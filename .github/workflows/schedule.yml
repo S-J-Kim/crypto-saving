@@ -34,4 +34,4 @@ jobs:
         API_ACCESS_KEY_COINONE: ${{secrets.API_ACCESS_KEY_COINONE}}
         API_SECRET_KEY_COINONE: ${{secrets.API_SECRET_KEY_COINONE}}
         DISCORD_WEBHOOK_URL: ${{secrets.DISCORD_WEBHOOK_URL}}
-      run: "echo $AMOUNT"
+      run: echo "$AMOUNT"
