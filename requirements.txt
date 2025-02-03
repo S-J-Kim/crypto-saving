@@ -1,0 +1,3 @@
+httplib2==0.22.0
+pyparsing==3.2.1
+python-dotenv==1.0.1
