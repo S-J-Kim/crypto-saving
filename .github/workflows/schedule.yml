@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  Execute:
 
     runs-on: ubuntu-latest
     environment: default
@@ -34,4 +34,7 @@ jobs:
         API_ACCESS_KEY_COINONE: ${{secrets.API_ACCESS_KEY_COINONE}}
         API_SECRET_KEY_COINONE: ${{secrets.API_SECRET_KEY_COINONE}}
         DISCORD_WEBHOOK_URL: ${{secrets.DISCORD_WEBHOOK_URL}}
+        AMOUNT: ${{vars.AMOUNT}}
+        CURRENCY_HOLD: ${{vars.CURRENCY_HOLD}}
+        CURRENCY_BUY: ${{vars.CURRENCY_BUY}}
       run: echo "$AMOUNT"
