@@ -110,6 +110,7 @@ def get_balance_info(*currencies):
             + f"\n**[{curr['currency']}]**\n"
             + f"현재 보유량: {float(curr['available']):,} {curr['currency']}\n"
             + f"매수 평균가: {float(curr['average_price']):,} {KRW}\n"
+            + f"총 보유 가치: {int(float(curr['available']) * float(curr['average_price'])):,} {KRW}\n"
         )
 
     report = reduce(format_balance, balances, "")
