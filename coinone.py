@@ -186,7 +186,7 @@ def get_order_result_report(order):
         + f"**[주문 시각]**\n{datetime.datetime.fromtimestamp(order['ordered_at']/1000)}\n\n"
         + f"**[주문 가격]**\n{int(order['average_executed_price']):,} {KRW}\n\n"
         + f"**[체결 수량]**\n{order['executed_qty']} {BTC}\n\n"
-        + f"**[체결 금액]**\n{int(order['traded_amount']):,} {KRW}\n\n"
+        + f"**[체결 금액]**\n{float(order['traded_amount']):,} {KRW}\n\n"
         + f"**[주문 상태]**\n{order['status']}\n\n"
         + f"**[수수료]**\n{float(order['fee']):,} {KRW}\n\n"
     )
