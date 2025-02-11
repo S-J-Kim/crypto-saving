@@ -6,7 +6,7 @@ name: Crypto auto-saving
 on:
   workflow_dispatch:
   schedule: 
-    - cron: '0 */24 * * *' 
+    - cron: '0 11 * * *' 
 
   
 
@@ -36,5 +36,5 @@ jobs:
         DISCORD_WEBHOOK_URL: ${{secrets.DISCORD_WEBHOOK_URL}}
         CURRENCY_HOLD: ${{vars.CURRENCY_HOLD}}
         CURRENCY_BUY: ${{vars.CURRENCY_BUY}}
-        AMOUNT: 5000
+        AMOUNT: ${{vars.AMOUNT}}
       run: echo "$AMOUNT" && python3 coinone.py
