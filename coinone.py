@@ -56,6 +56,9 @@ TARGET_CURRENCY = "BTC"
 KRW = QUOTE_CURRENCY
 BTC = TARGET_CURRENCY
 
+IS_ACTIVE = os.getenv("IS_ACTIVE", "FALSE")
+IS_ACTIVE = IS_ACTIVE.strip().lower() in ["true", "1", "yes"]
+
 
 def get_encoded_payload(payload):
     payload["nonce"] = str(uuid.uuid4())
@@ -218,7 +221,16 @@ def place_buy_order(amount=AMOUNT):
         )
 
     else:
-        send_discord_message(f"Failed to buy BTC: {buy_response}")
+        fail_msg = f"❌ 자동 매수 주문이 실패했습니다.\n사유: {buy_response}"
+        send_discord_message(fail_msg)
 
 
-place_buy_order()
+if __name__ == "__main__":
+    if IS_ACTIVE:
+        place_buy_order()
+    else:
+        user_msg = (
+            "⏸️ 자동 매수 기능이 현재 비활성화되어 있습니다.\n"
+            "환경변수 IS_ACTIVE가 활성화(예: TRUE, 1, yes)로 설정되어 있지 않아 오늘의 자동 매수가 실행되지 않았습니다."
+        )
+        send_discord_message(user_msg)
