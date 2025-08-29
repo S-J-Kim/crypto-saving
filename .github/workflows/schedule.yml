@@ -37,4 +37,4 @@ jobs:
         CURRENCY_HOLD: ${{vars.CURRENCY_HOLD}}
         CURRENCY_BUY: ${{vars.CURRENCY_BUY}}
         AMOUNT: ${{vars.AMOUNT}}
-      run: echo "$AMOUNT" && echo "$CURRENCY_BUY" && echo "$IS_ACTIVE" python3 coinone.py
+      run: echo "$AMOUNT" && echo "$CURRENCY_BUY" && echo "$IS_ACTIVE" && python3 coinone.py
