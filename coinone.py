@@ -81,13 +81,25 @@ def get_response(action, payload, method="POST"):
         "X-COINONE-SIGNATURE": get_signature(encoded_payload),
     }
 
+    # 로깅: 요청 정보
+    print(f"[API REQUEST] {method} {url}")
+    print(f"[API HEADERS] {headers}")
+    if payload:
+        print(f"[API PAYLOAD] {payload}")
+
     http = httplib2.Http()
 
     try:
-        _, content = http.request(url, method, headers=headers)
-        return json.loads(content)
+        response, content = http.request(url, method, headers=headers)
+        response_data = json.loads(content)
+        
+        # 로깅: 응답 정보
+        print(f"[API RESPONSE] Status: {response.status}")
+        print(f"[API RESPONSE] Data: {response_data}")
+        
+        return response_data
     except Exception as e:
-        print(f"Exception occurred: {str(e)}")
+        print(f"[API ERROR] Exception occurred: {str(e)}")
         raise
 
 
@@ -105,12 +117,23 @@ def get_balance_info(*currencies):
     balances = balance["balances"]
 
     def format_balance(acc, curr):
+        currency_upper = curr['currency'].upper()
+        
+        # 기준 통화(CURRENCY_HOLD)는 가격 조회하지 않음
+        if currency_upper == CURRENCY_HOLD.upper():
+            value_info = f"총 보유 가치: {int(float(curr['available'])):,} {CURRENCY_HOLD}\n"
+        else:
+            # 다른 통화는 현재 가격으로 계산
+            current_price = float(get_current_price(curr['currency']))
+            total_value = int(float(curr['available']) * current_price)
+            value_info = f"총 보유 가치: {total_value:,} {CURRENCY_HOLD}\n"
+        
         return (
             acc
             + f"\n**[{curr['currency']}]**\n"
             + f"현재 보유량: {float(curr['available']):,} {curr['currency']}\n"
             + f"매수 평균가: {float(curr['average_price']):,} {CURRENCY_HOLD}\n"
-            + f"총 보유 가치: {int(float(curr['available']) * float(get_current_price(curr['currency']))):,} {CURRENCY_HOLD}\n"
+            + value_info
         )
 
     report = reduce(format_balance, balances, "")
@@ -161,7 +184,7 @@ def get_current_price(target=CURRENCY_BUY):
     }
 
     price = get_response(**arg_ticker, method="GET")
-
+    
     return price["tickers"][0]["best_asks"][0]["price"]
 
 
