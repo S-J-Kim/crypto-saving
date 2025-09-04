@@ -50,11 +50,8 @@ SECRET_KEY = bytes(os.getenv("API_SECRET_KEY_COINONE"), "utf-8")
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
 
 AMOUNT = os.getenv("AMOUNT")
-
-QUOTE_CURRENCY = "KRW"
-TARGET_CURRENCY = "BTC"
-KRW = QUOTE_CURRENCY
-BTC = TARGET_CURRENCY
+CURRENCY_BUY = os.getenv("CURRENCY_BUY", "BTC")
+CURRENCY_HOLD = os.getenv("CURRENCY_HOLD", "KRW")
 
 IS_ACTIVE = os.getenv("IS_ACTIVE", "FALSE")
 IS_ACTIVE = IS_ACTIVE.strip().lower() in ["true", "1", "yes"]
@@ -87,7 +84,7 @@ def get_response(action, payload, method="POST"):
     http = httplib2.Http()
 
     try:
-        response, content = http.request(url, method, headers=headers)
+        _, content = http.request(url, method, headers=headers)
         return json.loads(content)
     except Exception as e:
         print(f"Exception occurred: {str(e)}")
@@ -112,8 +109,8 @@ def get_balance_info(*currencies):
             acc
             + f"\n**[{curr['currency']}]**\n"
             + f"현재 보유량: {float(curr['available']):,} {curr['currency']}\n"
-            + f"매수 평균가: {float(curr['average_price']):,} {KRW}\n"
-            + f"총 보유 가치: {int(float(curr['available']) * float(get_current_price(curr['currency']))):,} {KRW}\n"
+            + f"매수 평균가: {float(curr['average_price']):,} {CURRENCY_HOLD}\n"
+            + f"총 보유 가치: {int(float(curr['available']) * float(get_current_price(curr['currency']))):,} {CURRENCY_HOLD}\n"
         )
 
     report = reduce(format_balance, balances, "")
@@ -122,7 +119,7 @@ def get_balance_info(*currencies):
     return report
 
 
-def buy(amount, limit_price, target=BTC):
+def buy(amount, limit_price, target=CURRENCY_BUY):
 
     order_id = str(uuid.uuid4())
 
@@ -130,7 +127,7 @@ def buy(amount, limit_price, target=BTC):
         "action": "/v2.1/order",
         "payload": {
             "access_token": ACCESS_TOKEN,
-            "quote_currency": KRW,
+            "quote_currency": CURRENCY_HOLD,
             "target_currency": target,
             "type": "MARKET",
             "side": "BUY",
@@ -143,13 +140,13 @@ def buy(amount, limit_price, target=BTC):
     return get_response(**arg_buy)
 
 
-def get_order_info(order_id, target=BTC):
+def get_order_info(order_id, target=CURRENCY_BUY):
     arg_order_info = {
         "action": "/v2.1/order/detail",
         "payload": {
             "access_token": ACCESS_TOKEN,
             "order_id": order_id,
-            "quote_currency": KRW,
+            "quote_currency": CURRENCY_HOLD,
             "target_currency": target,
         },
     }
@@ -157,9 +154,9 @@ def get_order_info(order_id, target=BTC):
     return get_response(**arg_order_info)
 
 
-def get_current_price(target=BTC):
+def get_current_price(target=CURRENCY_BUY):
     arg_ticker = {
-        "action": f"/public/v2/ticker_new/{QUOTE_CURRENCY}/{target}",
+        "action": f"/public/v2/ticker_new/{CURRENCY_HOLD}/{target}",
         "payload": {},
     }
 
@@ -183,41 +180,41 @@ def send_discord_message(message):
         raise
 
 
-def get_order_result_report(order):
+def get_order_result_report(order, currency=CURRENCY_BUY):
     return (
         f"**[주문 ID]**\n {order['order_id']}\n\n"
         + f"**[주문 시각]**\n{datetime.datetime.fromtimestamp(order['ordered_at']/1000)}\n\n"
-        + f"**[주문 가격]**\n{int(order['average_executed_price']):,} {KRW}\n\n"
-        + f"**[체결 수량]**\n{order['executed_qty']} {BTC}\n\n"
-        + f"**[체결 금액]**\n{float(order['traded_amount']):,} {KRW}\n\n"
+        + f"**[주문 가격]**\n{int(order['average_executed_price']):,} {CURRENCY_HOLD}\n\n"
+        + f"**[체결 수량]**\n{order['executed_qty']} {currency}\n\n"
+        + f"**[체결 금액]**\n{float(order['traded_amount']):,} {CURRENCY_HOLD}\n\n"
         + f"**[주문 상태]**\n{order['status']}\n\n"
-        + f"**[수수료]**\n{float(order['fee']):,} {KRW}\n\n"
+        + f"**[수수료]**\n{float(order['fee']):,} {CURRENCY_HOLD}\n\n"
     )
 
 
-def place_buy_order(amount=AMOUNT):
+def place_buy_order(amount=AMOUNT, currency=CURRENCY_BUY):
 
-    # balance = get_balance(KRW, BTC)
-    # krw_balance = float(balance["krw"]["balance"])
-    current_price = float(get_current_price())
+    # balance = get_balance(CURRENCY_HOLD, currency)
+    # hold_balance = float(balance[CURRENCY_HOLD.lower()]["balance"])
+    current_price = float(get_current_price(currency))
 
-    # if krw_balance < 5000:
-    #     send_discord_message("KRW balance is less than 5000")
+    # if hold_balance < 5000:
+    #     send_discord_message(f"{CURRENCY_HOLD} balance is less than 5000")
     #     return
 
-    buy_response = buy(amount=amount, limit_price=current_price * 1.03)
+    buy_response = buy(amount=amount, limit_price=current_price * 1.03, target=currency)
 
     time.sleep(1)
     if buy_response["result"] == "success":
-        order_info = get_order_info(buy_response["order_id"])
+        order_info = get_order_info(buy_response["order_id"], target=currency)
 
         pprint.pprint(order_info)
 
         send_discord_message(
             "**===== 주문이 접수되었습니다 =====**\n\n"
-            + get_order_result_report(order_info["order"])
+            + get_order_result_report(order_info["order"], currency)
             + "\n"
-            + get_balance_info(KRW, BTC)
+            + get_balance_info(CURRENCY_HOLD, currency)
         )
 
     else:
@@ -227,7 +224,7 @@ def place_buy_order(amount=AMOUNT):
 
 if __name__ == "__main__":
     if IS_ACTIVE:
-        place_buy_order()
+        place_buy_order(currency=CURRENCY_BUY)
     else:
         user_msg = (
             "⏸️ 자동 매수 기능이 현재 비활성화되어 있습니다.\n"
